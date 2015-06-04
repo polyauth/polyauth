@@ -1,0 +1,24 @@
+{
+  "name": "polyauth",
+  "version": "0.1.0",
+  "main": [
+    "polyauth.html"
+  ],
+  "authors": [
+    "Andrei Nesterov <ae.nesterov@polyauth.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "*.md",
+    "src",
+    "package.json",
+    "gulpfile.js",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+  }
+}
