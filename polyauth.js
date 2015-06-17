@@ -36,7 +36,7 @@ window.PolyAuth = {};
 	var POLYAUTH_ORIGIN = 'polyauth.herokuapp.com';
 	var POLYAUTH_ORIGIN_URI = 'https://' + POLYAUTH_ORIGIN;
 	var POLYAUTH_API_VERSION = 'v1';
-	var KEYS = ['oauth2.google-plus', 'oauth2.facebook'];
+	var KEYS = ['oauth2.google-plus', 'oauth2.facebook', 'oauth2.vk', 'oauth2.ok'];
 
 	scope.api = function (token, v) {
 		v = v || POLYAUTH_API_VERSION;
