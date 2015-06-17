@@ -34,7 +34,9 @@ window.PolyAuth = {};
 	const POLYAUTH_API_VERSION = 'v1';
 	const KEYS =
 		[	'oauth2.google-plus',
-			'oauth2.facebook' ];
+			'oauth2.facebook',
+			'oauth2.vk',
+			'oauth2.ok' ];
 	
 	scope.api =
 		function(token, v) {
