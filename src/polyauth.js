@@ -71,6 +71,7 @@ window.PolyAuth = {};
 							get: (options) => makeRealmGetRequest(token, v, id, options),
 							update: (options) => makeRealmUpdateRequest(token, v, id, options),
 							remove: () => makeRealmRemoveRequest(token, v, id),
+							reset: () => makeRealmResetRequest(token, v, id),
 							auth: (key) => ({
 								accessToken: (options) => makeAuthTokenRequest(token, v, id, key)
 							})
@@ -305,6 +306,17 @@ window.PolyAuth = {};
 		let uri = `${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${id}`;
 		let opt = {
 			method: 'DELETE',
+			headers: addAuthrorizationHeader(token)
+		};
+		return new Request(uri, opt);
+	}
+
+	function makeRealmResetRequest(token, v, id) {
+		if (!v || !id || !token) { throw new TypeError('badarg'); }
+
+		let uri = `${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${id}/reset`;
+		let opt = {
+			method: 'POST',
 			headers: addAuthrorizationHeader(token)
 		};
 		return new Request(uri, opt);
