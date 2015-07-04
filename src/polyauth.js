@@ -91,7 +91,8 @@ window.PolyAuth = {};
 
 				options = options || {};
 				let v = options.apiv || POLYAUTH_API_VERSION;
-				let op = options.op || 'signin';
+				let op = options.op || 'm/token';
+				let ns = op[0];
 				let state = ('state' in options) ? options.state : makeState();
 
 				let opt = {};
@@ -100,7 +101,7 @@ window.PolyAuth = {};
 					opt.state = state;
 				}
 
-				return makeAuthCodeURI(v, realmId, options.key, options.redirectURI, opt);
+				return makeAuthCodeURI(v, realmId, ns, options.key, options.redirectURI, opt);
 			};
 
 		scope.signIn =
@@ -333,14 +334,14 @@ window.PolyAuth = {};
 		return new Request(uri, opt);
 	}
 
-	function makeAuthCodeURI(v, realmId, key, redirectURI, options) {
-		if (!v || !realmId || !key || !redirectURI) { throw new TypeError('badarg'); }
+	function makeAuthCodeURI(v, realmId, ns, key, redirectURI, options) {
+		if (!v || !realmId || !ns || !key || !redirectURI) { throw new TypeError('badarg'); }
 
 		let params = {};
 		params.redirect_uri = redirectURI;
 		if (options.state) { params.state = options.state; }
 
-		return makeURI(`${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${realmId}/auth/${key}/m/code`, params);
+		return makeURI(`${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${realmId}/auth/${key}/${ns}/code`, params);
 	}
 
 	function makeURI(base, params) {
@@ -411,7 +412,7 @@ window.PolyAuth = {};
 			let verifyState = (options.verifyState === false) ? false : true;
 			let sign = loadSign(realmId);
 			let data = options.data || parseQS();
-			let op = options.op || 'signin';
+			let op = options.op || 'm/token';
 			let opInitialized = options.op ? true : false;
 
 			let done = (s, err) => s ? resolve(s) : reject(err);
@@ -450,7 +451,7 @@ window.PolyAuth = {};
 			let reqOptions = {code: code};
 			switch (op) {
 
-				case 'signin':
+				case 'm/token':
 					return fetchJSON(makeAuthTokenRequest(v, realmId, key, reqOptions))
 						.then(function({access_token}) {
 							var sign = {accessToken: access_token};
@@ -458,7 +459,7 @@ window.PolyAuth = {};
 						})
 						.then(maybeRedirect);
 
-				case 'link':
+				case 'm/link':
 					return (!sign || !sign.accessToken) ?
 						reject({accessToken: 'required'}) :
 						fetchJSON(makeAuthLinkRequest(sign.accessToken, v, realmId, key, reqOptions))
@@ -476,19 +477,19 @@ window.PolyAuth = {};
 	}
 
 	function loadSign(realmId) {
-		let key = `polyauth-sign|${realmId}`;
+		let key = `polyauth-sign.${realmId}`;
 		let val = localStorage.getItem(key);
 		return val ? JSON.parse(val) : null;
 	}
 
 	function storeSign(realmId, val) {
-		let key = `polyauth-sign|${realmId}`;
+		let key = `polyauth-sign.${realmId}`;
 		localStorage.setItem(key, JSON.stringify(val));
 		return val;
 	}
 
 	function removeSign(realmId) {
-		let key = `polyauth-sign|${realmId}`;
+		let key = `polyauth-sign.${realmId}`;
 		localStorage.removeItem(key);
 		return null;
 	}
