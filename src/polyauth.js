@@ -308,7 +308,7 @@ window.PolyAuth = {};
 	function makeAuthTokenRequest(v, realmId, key, {code}) {
 		if (!v || !realmId || !key || !code) { throw new TypeError('badarg'); }
 
-		let uri = `${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${realmId}/auth/${key}/token`;
+		let uri = `${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${realmId}/auth/${key}/m/token`;
 		let opt = {
 			method: 'POST',
 			headers: {'Content-Type': 'application/json'},
@@ -320,7 +320,7 @@ window.PolyAuth = {};
 	function makeAuthLinkRequest(token, v, realmId, key, {code}) {
 		if (!v || !realmId || !key || !code || !token) { throw new TypeError('badarg'); }
 
-		let uri = `${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${realmId}/auth/${key}/link`;
+		let uri = `${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${realmId}/auth/${key}/m/link`;
 		let opt = {
 			method: 'POST',
 			headers: addAuthrorizationHeader(token, {'Content-Type': 'application/json'}),
@@ -336,7 +336,7 @@ window.PolyAuth = {};
 		params.redirect_uri = redirectURI;
 		if (options.state) { params.state = options.state; }
 
-		return makeURI(`${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${realmId}/auth/${key}/code`, params);
+		return makeURI(`${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${realmId}/auth/${key}/m/code`, params);
 	}
 
 	function makeURI(base, params) {
