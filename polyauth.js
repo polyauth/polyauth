@@ -81,14 +81,17 @@ window.PolyAuth = {};
 			},
 			realm: function realm(id) {
 				return id ? {
-					get: function get() {
-						return makeRealmGetRequest(token, v, id);
+					get: function get(options) {
+						return makeRealmGetRequest(token, v, id, options);
 					},
 					update: function update(options) {
 						return makeRealmUpdateRequest(token, v, id, options);
 					},
 					remove: function remove() {
 						return makeRealmRemoveRequest(token, v, id);
+					},
+					reset: function reset() {
+						return makeRealmResetRequest(token, v, id);
 					},
 					auth: function auth(key) {
 						return {
@@ -120,7 +123,8 @@ window.PolyAuth = {};
 
 				options = options || {};
 				var v = options.apiv || POLYAUTH_API_VERSION;
-				var op = options.op || 'signin';
+				var op = options.op || 'm/token';
+				var ns = op[0];
 				var state = 'state' in options ? options.state : makeState();
 
 				var opt = {};
@@ -129,7 +133,7 @@ window.PolyAuth = {};
 					opt.state = state;
 				}
 
-				return makeAuthCodeURI(v, realmId, options.key, options.redirectURI, opt);
+				return makeAuthCodeURI(v, realmId, ns, options.key, options.redirectURI, opt);
 			};
 
 			scope.signIn = function (realmId, options) {
@@ -314,6 +318,9 @@ window.PolyAuth = {};
 		if (options.rows) {
 			params.rows = options.rows;
 		}
+		if (options.fields) {
+			params.fl = options.fields.join(',');
+		}
 
 		var uri = makeURI('' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms', params);
 		var opt = {
@@ -337,12 +344,17 @@ window.PolyAuth = {};
 		return new Request(uri, opt);
 	}
 
-	function makeRealmGetRequest(token, v, id) {
+	function makeRealmGetRequest(token, v, id, options) {
 		if (!v || !id) {
 			throw new TypeError('badarg');
 		}
 
-		var uri = '' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + id;
+		var params = {};
+		if (options.fields) {
+			params.fl = options.fields.join(',');
+		}
+
+		var uri = makeURI('' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + id, params);
 		var opt = {
 			method: 'GET',
 			headers: addAuthrorizationHeader(token)
@@ -377,6 +389,19 @@ window.PolyAuth = {};
 		return new Request(uri, opt);
 	}
 
+	function makeRealmResetRequest(token, v, id) {
+		if (!v || !id || !token) {
+			throw new TypeError('badarg');
+		}
+
+		var uri = '' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + id + '/reset';
+		var opt = {
+			method: 'POST',
+			headers: addAuthrorizationHeader(token)
+		};
+		return new Request(uri, opt);
+	}
+
 	function makeAuthTokenRequest(v, realmId, key, _ref) {
 		var code = _ref.code;
 
@@ -384,7 +409,7 @@ window.PolyAuth = {};
 			throw new TypeError('badarg');
 		}
 
-		var uri = '' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/token';
+		var uri = '' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/m/token';
 		var opt = {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -400,7 +425,7 @@ window.PolyAuth = {};
 			throw new TypeError('badarg');
 		}
 
-		var uri = '' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/link';
+		var uri = '' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/m/link';
 		var opt = {
 			method: 'POST',
 			headers: addAuthrorizationHeader(token, { 'Content-Type': 'application/json' }),
@@ -409,8 +434,8 @@ window.PolyAuth = {};
 		return new Request(uri, opt);
 	}
 
-	function makeAuthCodeURI(v, realmId, key, redirectURI, options) {
-		if (!v || !realmId || !key || !redirectURI) {
+	function makeAuthCodeURI(v, realmId, ns, key, redirectURI, options) {
+		if (!v || !realmId || !ns || !key || !redirectURI) {
 			throw new TypeError('badarg');
 		}
 
@@ -420,7 +445,7 @@ window.PolyAuth = {};
 			params.state = options.state;
 		}
 
-		return makeURI('' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/code', params);
+		return makeURI('' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/' + ns + '/code', params);
 	}
 
 	function makeURI(base, params) {
@@ -495,7 +520,7 @@ window.PolyAuth = {};
 			var verifyState = options.verifyState === false ? false : true;
 			var sign = loadSign(realmId);
 			var data = options.data || parseQS();
-			var op = options.op || 'signin';
+			var op = options.op || 'm/token';
 			var opInitialized = options.op ? true : false;
 
 			var done = function done(s, err) {
@@ -539,7 +564,7 @@ window.PolyAuth = {};
 			var reqOptions = { code: code };
 			switch (op) {
 
-				case 'signin':
+				case 'm/token':
 					return fetchJSON(makeAuthTokenRequest(v, realmId, key, reqOptions)).then(function (_ref3) {
 						var access_token = _ref3.access_token;
 
@@ -547,7 +572,7 @@ window.PolyAuth = {};
 						return resolve(storeSign(realmId, sign));
 					}).then(maybeRedirect);
 
-				case 'link':
+				case 'm/link':
 					return !sign || !sign.accessToken ? reject({ accessToken: 'required' }) : fetchJSON(makeAuthLinkRequest(sign.accessToken, v, realmId, key, reqOptions)).then(function () {
 						return resolve(sign);
 					}).then(maybeRedirect);
@@ -560,19 +585,19 @@ window.PolyAuth = {};
 	}
 
 	function loadSign(realmId) {
-		var key = 'polyauth-sign|' + realmId;
+		var key = 'polyauth-sign.' + realmId;
 		var val = localStorage.getItem(key);
 		return val ? JSON.parse(val) : null;
 	}
 
 	function storeSign(realmId, val) {
-		var key = 'polyauth-sign|' + realmId;
+		var key = 'polyauth-sign.' + realmId;
 		localStorage.setItem(key, JSON.stringify(val));
 		return val;
 	}
 
 	function removeSign(realmId) {
-		var key = 'polyauth-sign|' + realmId;
+		var key = 'polyauth-sign.' + realmId;
 		localStorage.removeItem(key);
 		return null;
 	}
