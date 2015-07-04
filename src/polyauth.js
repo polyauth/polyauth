@@ -68,7 +68,7 @@ window.PolyAuth = {};
 				realm:
 					(id) => id ?
 						({
-							get: () => makeRealmGetRequest(token, v, id),
+							get: (options) => makeRealmGetRequest(token, v, id, options),
 							update: (options) => makeRealmUpdateRequest(token, v, id, options),
 							remove: () => makeRealmRemoveRequest(token, v, id),
 							auth: (key) => ({
@@ -250,6 +250,7 @@ window.PolyAuth = {};
 		let params = {};
 		if (options.start) { params.start = options.start; }
 		if (options.rows) { params.rows = options.rows; }
+		if (options.fields) { params.fl = options.fields.join(','); }
 
 		let uri = makeURI(`${POLYAUTH_ORIGIN_URI}/api/${v}/realms`, params);
 		let opt = {
@@ -271,10 +272,13 @@ window.PolyAuth = {};
 		return new Request(uri, opt);
 	}
 
-	function makeRealmGetRequest(token, v, id) {
+	function makeRealmGetRequest(token, v, id, options) {
 		if (!v || !id) { throw new TypeError('badarg'); }
 
-		let uri = `${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${id}`;
+		let params = {};
+		if (options.fields) { params.fl = options.fields.join(','); }
+
+		let uri = makeURI(`${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${id}`, params);
 		let opt = {
 			method: 'GET',
 			headers: addAuthrorizationHeader(token)
