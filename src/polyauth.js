@@ -124,8 +124,13 @@ window.PolyAuth = {};
 			};
 	}
 
-	scope.keys = KEYS;
 	scope.fetch = fetchJSON;
+
+	scope.Key = {
+		all: () => KEYS,
+		key: key,
+		parse: parseKey
+	};
 
 	scope.State = {
 		make: makeState
@@ -372,6 +377,35 @@ window.PolyAuth = {};
 			acc[key] = val ? val : true;
 			return acc;
 		}, {});
+	}
+
+	function key(val) {
+		switch (val.prot) {
+
+			case 'oauth2':
+				if (!val.prov) { throw new TypeError('badarg'); }
+				return (val.prot + '.' + val.prov);
+
+			default:
+				throw new TypeError('bad_key');
+
+		}
+	}
+
+	function parseKey(key) {
+		var p = key.split('.');
+		switch (p[0]) {
+		
+			case 'oauth2':
+				return {
+					prot: p[0],
+					prov: p[1]
+				};
+
+			default:
+				throw new TypeError('bad_key');
+
+		}	
 	}
 
 	function flushQS() {
