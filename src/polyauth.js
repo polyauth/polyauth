@@ -73,7 +73,9 @@ window.PolyAuth = {};
 							remove: () => makeRealmRemoveRequest(token, v, id),
 							reset: () => makeRealmResetRequest(token, v, id),
 							auth: (key) => ({
-								accessToken: (options) => makeAuthTokenRequest(token, v, id, key)
+								accessToken: (options) => makeAuthTokenRequest(v, id, key, options),
+								standaloneToken: (options) => makeAuthStandaloneTokenRequest(v, id, key, options),
+								standaloneProfile: (options) => makeAuthStandaloneProfileRequest(v, id, key, options)
 							})
 						}) :
 						({
@@ -133,7 +135,8 @@ window.PolyAuth = {};
 	};
 
 	scope.State = {
-		make: makeState
+		make: makeState,
+		take: takeState
 	};
 
 	scope.QS = {
@@ -347,6 +350,30 @@ window.PolyAuth = {};
 			method: 'POST',
 			headers: addAuthrorizationHeader(token, {'Content-Type': 'application/json'}),
 			body: JSON.stringify({code: code})
+		};
+		return new Request(uri, opt);
+	}
+
+	function makeAuthStandaloneProfileRequest(v, realmId, key, {code}) {
+		if (!v || !realmId || !key || !code) { throw new TypeError('badarg'); }
+
+		let uri = `${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${realmId}/auth/${key}/s/profile`;
+		let opt = {
+			method: 'POST',
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify({code: code})
+		};
+		return new Request(uri, opt);
+	}
+
+	function makeAuthStandaloneTokenRequest(v, realmId, key, {code, secret}) {
+		if (!v || !realmId || !key || !code || !secret) { throw new TypeError('badarg'); }
+
+		let uri = `${POLYAUTH_ORIGIN_URI}/api/${v}/realms/${realmId}/auth/${key}/s/token`;
+		let opt = {
+			method: 'POST',
+			headers: {'Content-Type': 'application/json'},
+			body: JSON.stringify({code: code, client_secret: secret})
 		};
 		return new Request(uri, opt);
 	}
