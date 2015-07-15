@@ -109,7 +109,7 @@ window.PolyAuth = {};
 			function(realmId, options) {
 				if (!realmId) { throw new TypeError('badarg'); }
 
-				options = options | {};
+				options = options || {};
 				let v = options.apiv || POLYAUTH_API_VERSION;
 				let sign = signAcc[realmId];
 				return sign ? sign : signAcc[realmId] = authenticate(v, realmId, options);
@@ -558,21 +558,21 @@ window.PolyAuth = {};
 			return null;
 		}
 
-		let res = null;
-		let fn =
-			function(acc, state) {
+		let {res, rest} =
+			arr.reduceRight(function(acc, state) {
 				switch (state.value) {
 					case val:
-						res = state;
+						acc.res = state;
 						break;
 					default:
-						acc.push(state);
+						acc.rest.push(state);
 				}
 
 				return acc;
-			};
+			}, {res: null, rest: []});
 
-		storeStateArray(arr.reduceRight(fn, []));
+
+		storeStateArray(rest);
 		return res;
 	}
 
