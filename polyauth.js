@@ -96,7 +96,13 @@ window.PolyAuth = {};
 					auth: function auth(key) {
 						return {
 							accessToken: function accessToken(options) {
-								return makeAuthTokenRequest(token, v, id, key);
+								return makeAuthTokenRequest(v, id, key, options);
+							},
+							standaloneToken: function standaloneToken(options) {
+								return makeAuthStandaloneTokenRequest(v, id, key, options);
+							},
+							standaloneProfile: function standaloneProfile(options) {
+								return makeAuthStandaloneProfileRequest(v, id, key, options);
 							}
 						};
 					}
@@ -141,7 +147,7 @@ window.PolyAuth = {};
 					throw new TypeError('badarg');
 				}
 
-				options = options | {};
+				options = options || {};
 				var v = options.apiv || POLYAUTH_API_VERSION;
 				var sign = signAcc[realmId];
 				return sign ? sign : signAcc[realmId] = authenticate(v, realmId, options);
@@ -158,11 +164,19 @@ window.PolyAuth = {};
 		})();
 	}
 
-	scope.keys = KEYS;
 	scope.fetch = fetchJSON;
 
+	scope.Key = {
+		all: function all() {
+			return KEYS;
+		},
+		key: key,
+		parse: parseKey
+	};
+
 	scope.State = {
-		make: makeState
+		make: makeState,
+		take: takeState
 	};
 
 	scope.QS = {
@@ -434,6 +448,39 @@ window.PolyAuth = {};
 		return new Request(uri, opt);
 	}
 
+	function makeAuthStandaloneProfileRequest(v, realmId, key, _ref3) {
+		var code = _ref3.code;
+
+		if (!v || !realmId || !key || !code) {
+			throw new TypeError('badarg');
+		}
+
+		var uri = '' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/s/profile';
+		var opt = {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ code: code })
+		};
+		return new Request(uri, opt);
+	}
+
+	function makeAuthStandaloneTokenRequest(v, realmId, key, _ref4) {
+		var code = _ref4.code;
+		var secret = _ref4.secret;
+
+		if (!v || !realmId || !key || !code || !secret) {
+			throw new TypeError('badarg');
+		}
+
+		var uri = '' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/s/token';
+		var opt = {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ code: code, client_secret: secret })
+		};
+		return new Request(uri, opt);
+	}
+
 	function makeAuthCodeURI(v, realmId, ns, key, redirectURI, options) {
 		if (!v || !realmId || !ns || !key || !redirectURI) {
 			throw new TypeError('badarg');
@@ -472,6 +519,37 @@ window.PolyAuth = {};
 			acc[key] = val ? val : true;
 			return acc;
 		}, {});
+	}
+
+	function key(val) {
+		switch (val.prot) {
+
+			case 'oauth2':
+				if (!val.prov) {
+					throw new TypeError('badarg');
+				}
+				return val.prot + '.' + val.prov;
+
+			default:
+				throw new TypeError('bad_key');
+
+		}
+	}
+
+	function parseKey(key) {
+		var p = key.split('.');
+		switch (p[0]) {
+
+			case 'oauth2':
+				return {
+					prot: p[0],
+					prov: p[1]
+				};
+
+			default:
+				throw new TypeError('bad_key');
+
+		}
 	}
 
 	function flushQS() {
@@ -565,8 +643,8 @@ window.PolyAuth = {};
 			switch (op) {
 
 				case 'm/token':
-					return fetchJSON(makeAuthTokenRequest(v, realmId, key, reqOptions)).then(function (_ref3) {
-						var access_token = _ref3.access_token;
+					return fetchJSON(makeAuthTokenRequest(v, realmId, key, reqOptions)).then(function (_ref5) {
+						var access_token = _ref5.access_token;
 
 						var sign = { accessToken: access_token };
 						return resolve(storeSign(realmId, sign));
@@ -620,20 +698,22 @@ window.PolyAuth = {};
 			return null;
 		}
 
-		var res = null;
-		var fn = function fn(acc, state) {
+		var _arr$reduceRight = arr.reduceRight(function (acc, state) {
 			switch (state.value) {
 				case val:
-					res = state;
+					acc.res = state;
 					break;
 				default:
-					acc.push(state);
+					acc.rest.push(state);
 			}
 
 			return acc;
-		};
+		}, { res: null, rest: [] });
 
-		storeStateArray(arr.reduceRight(fn, []));
+		var res = _arr$reduceRight.res;
+		var rest = _arr$reduceRight.rest;
+
+		storeStateArray(rest);
 		return res;
 	}
 

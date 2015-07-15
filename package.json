@@ -1,6 +1,6 @@
 {
   "name": "polyauth",
-  "version": "0.1.1",
+  "version": "0.1.3",
   "devDependencies": {
     "del": "^1.2.0",
     "gulp": "^3.9.0",
