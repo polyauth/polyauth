@@ -141,7 +141,19 @@ window.PolyAuth = {};
 					opt.state = state;
 				}
 
-				return makeAuthCodeURI(v, realmId, ns, options.key, options.redirectURI, opt);
+				switch (ns) {
+
+					case 'm':
+						return makeAuthCodeURI(v, realmId, options.key, options.redirectURI, opt);
+
+					case 's':
+						opt.scope = options.scope;
+						return makeAuthStandaloneCodeURI(v, realmId, options.key, options.redirectURI, opt);
+
+					default:
+						throw new TypeError('bad_ns');
+
+				}
 			};
 
 			scope.signIn = function (realmId, options) {
@@ -483,8 +495,8 @@ window.PolyAuth = {};
 		return new Request(uri, opt);
 	}
 
-	function makeAuthCodeURI(v, realmId, ns, key, redirectURI, options) {
-		if (!v || !realmId || !ns || !key || !redirectURI) {
+	function makeAuthCodeURI(v, realmId, key, redirectURI, options) {
+		if (!v || !realmId || !key || !redirectURI) {
 			throw new TypeError('badarg');
 		}
 
@@ -494,7 +506,24 @@ window.PolyAuth = {};
 			params.state = options.state;
 		}
 
-		return makeURI('' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/' + ns + '/code', params);
+		return makeURI('' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/m/code', params);
+	}
+
+	function makeAuthStandaloneCodeURI(v, realmId, key, redirectURI, options) {
+		if (!v || !realmId || !key || !redirectURI) {
+			throw new TypeError('badarg');
+		}
+
+		var params = {};
+		params.redirect_uri = redirectURI;
+		if (options.state) {
+			params.state = options.state;
+		}
+		if (options.scope) {
+			params.scope = options.scope;
+		}
+
+		return makeURI('' + POLYAUTH_ORIGIN_URI + '/api/' + v + '/realms/' + realmId + '/auth/' + key + '/s/code', params);
 	}
 
 	function makeURI(base, params) {
